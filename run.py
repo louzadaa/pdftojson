@@ -18,7 +18,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Chave da API OpenRouter
 OPENROUTER_API_KEY = ""
 
 class PDFExtractorAgents:
@@ -35,7 +34,7 @@ class PDFExtractorAgents:
             text = ""
             with pdfplumber.open(pdf_file) as pdf:
                 for page_num, page in enumerate(pdf.pages, 1):
-                    page_text = page.extract_text(x_tolerance=1, y_tolerance=1)  # melhora alinhamento
+                    page_text = page.extract_text(x_tolerance=1, y_tolerance=1)
                     if page_text:
                         text += f"\n=== PÁGINA {page_num} ===\n{page_text}\n"
             return text
@@ -44,7 +43,7 @@ class PDFExtractorAgents:
             return ""
     
     def call_openrouter_api(self, prompt: str, model: str = "qwen/qwen3-30b-a3b-instruct-2507") -> str:
-        """Faz chamada para a API da OpenRouter"""
+        
         try:
             payload = {
                 "model": model,
@@ -134,7 +133,7 @@ Retorne APENAS um JSON válido seguindo esta estrutura exata:
             return {"empresa": "empresa_desconhecida", "planos_precos": []}
     
     def agent_coparticipacao_completo(self, pdf_text: str) -> Dict:
-        """Agente especializado em extrair TODAS as coparticipações e taxas"""
+       
         import uuid
         prompt = f"""
 Você é um agente especializado em extrair TODAS as COPARTICIPAÇÕES e TAXAS de documentos de planos de saúde.
@@ -242,14 +241,12 @@ Retorne APENAS um JSON válido seguindo esta estrutura:
             return {"informacoes_gerais": []}
 
     def process_pdf_completo(self, pdf_file, page_number: int = 1) -> Dict:
-        """Processa o PDF com EXTRAÇÃO COMPLETA usando todos os agentes"""
-        # Extrair texto do PDF
+        
         pdf_text = self.extract_text_from_pdf(pdf_file)
         
         if not pdf_text:
             return {}
         
-        # Estrutura base do JSON
         result = {
             "pagina": page_number,
             "empresa": "empresa_desconhecida",
@@ -262,66 +259,59 @@ Retorne APENAS um JSON válido seguindo esta estrutura:
             "informacoes_gerais": []
         }
         
-        # Progress bar para os agentes
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        # Contadores para mostrar o progresso
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("#### 🔍 Agente Valores Completo")
+            st.markdown("Valores Completo")
             agent1_status = st.empty()
             agent1_count = st.empty()
-            agent1_status.info("⏳ Aguardando...")
+            agent1_status.info("Aguardando...")
         
         with col2:
-            st.markdown("#### 💰 Agente Coparticipação Completo")
+            st.markdown("Coparticipação Completo")
             agent2_status = st.empty()
             agent2_count = st.empty()
-            agent2_status.info("⏳ Aguardando...")
+            agent2_status.info("Aguardando...")
         
         with col3:
-            st.markdown("#### 🏢 Agente Rede Completa")
+            st.markdown("Rede Credenciada Completo")
             agent3_status = st.empty()
             agent3_count = st.empty()
-            agent3_status.info("⏳ Aguardando...")
+            agent3_status.info("Aguardando...")
         
-        # Agente 1: Valores COMPLETOS
-        status_text.text("🔍 Agente 1: Extraindo TODOS os valores e planos...")
-        agent1_status.warning("🔄 Processando todas as tabelas...")
+        status_text.text("A1 valores e planos...")
+        agent1_status.warning("Processando as tabelas...")
         progress_bar.progress(25)
         agent1_result = self.agent_valores_completo(pdf_text)
         
         planos_count = len(agent1_result.get("planos_precos", []))
         agent1_count.metric("Planos Extraídos", planos_count)
-        agent1_status.success("✅ Concluído")
+        agent1_status.success("Concluído")
         
-        # Agente 2: Coparticipações COMPLETAS
-        status_text.text("💰 Agente 2: Extraindo TODAS as coparticipações...")
-        agent2_status.warning("🔄 Processando todas as taxas...")
+        status_text.text("A2 coparticipações...")
+        agent2_status.warning("Processando todas as taxas...")
         progress_bar.progress(50)
         agent2_result = self.agent_coparticipacao_completo(pdf_text)
         
         copart_count = len(agent2_result.get("tabelas_valores", []))
         agent2_count.metric("Tabelas de Valores", copart_count)
-        agent2_status.success("✅ Concluído")
+        agent2_status.success("Concluído")
         
-        # Agente 3: Rede Credenciada COMPLETA
-        status_text.text("🏢 Agente 3: Mapeando TODA a rede credenciada...")
-        agent3_status.warning("🔄 Processando toda a rede...")
+        status_text.text("A3 rede credenciada...")
+        agent3_status.warning("Processando toda a rede...")
         progress_bar.progress(75)
         agent3_result = self.agent_rede_credenciada_completo(pdf_text)
         
         rede_count = sum(len(info.get("lista", [])) for info in agent3_result.get("informacoes_gerais", []))
         agent3_count.metric("Estabelecimentos", rede_count)
-        agent3_status.success("✅ Concluído")
+        agent3_status.success("Concluído")
         
-        # Combinar resultados
-        status_text.text("📊 Combinando TODOS os resultados dos agentes...")
+        status_text.text("Combinando resultados...")
         progress_bar.progress(100)
         
-        # Atualizar estrutura base com resultados dos agentes
         if agent1_result:
             result.update({
                 "empresa": agent1_result.get("empresa", "empresa_desconhecida"),
@@ -337,21 +327,20 @@ Retorne APENAS um JSON válido seguindo esta estrutura:
         if agent3_result:
             result["informacoes_gerais"] = agent3_result.get("informacoes_gerais", [])
         
-        # Limpar progress bar
         progress_bar.empty()
         status_text.empty()
         
         return result
 
 def main():
-    st.title("🧠 PDF to JSON")
+    st.title("PDF to JSON")
     with st.sidebar:
-        st.header("⚙️ Configurações")
+        st.header("Configurações")
         page_number = st.number_input("Número da Página Inicial", min_value=1, value=1)
     extractor = PDFExtractorAgents(OPENROUTER_API_KEY)
     
     uploaded_file = st.file_uploader(
-        "📄 Faça upload do PDF do plano de saúde",
+        "Faça upload do PDF do plano de saúde",
         type=['pdf'],
         help="Sistema otimizado para extrair TODAS as informações de documentos de planos de saúde"
     )
@@ -363,22 +352,19 @@ def main():
             "Tipo": uploaded_file.type
         }
         
-        st.info("📋 **Informações do Arquivo:**")
+        st.info("Informações do Arquivo:")
         for key, value in file_details.items():
             st.write(f"**{key}:** {value}")
         
-        # Botão para processar
-        if st.button("🚀 EXTRAIR TUDO COM AGENTES IA", type="primary"):
+        if st.button("EXTRAIR", type="primary"):
             with st.spinner("Processando PDF com extração COMPLETA..."):
                 
-                # Processar PDF
                 result = extractor.process_pdf_completo(uploaded_file, page_number)
                 
                 if result:
-                    st.success("🎉 Extração COMPLETA concluída com sucesso!")
+                    st.success("Extração concluída com sucesso!")
                     
-                    # Mostrar resumo detalhado
-                    st.markdown("### 📊 Resumo da Extração COMPLETA")
+                    st.markdown("Resumo da Extração")
                     col1, col2, col3, col4 = st.columns(4)
                     
                     with col1:
@@ -396,59 +382,51 @@ def main():
                         rede_count = sum(len(info.get("lista", [])) for info in result.get("informacoes_gerais", []))
                         st.metric("Estabelecimentos", rede_count, delta=f"+{rede_count} mapeados")
                     
-                    # Detalhamento por categoria
-                    st.markdown("### 📈 Detalhamento da Extração")
+                    st.markdown("Detalhamento da Extração")
                     
-                    # Análise dos planos extraídos
                     if result.get("planos_precos"):
-                        st.markdown("#### 🔍 Planos Extraídos por Categoria")
+                        st.markdown("Planos Extraídos por Categoria")
                         df_planos = pd.DataFrame(result["planos_precos"])
                         
                         if not df_planos.empty:
-                            # Contador por produto
                             if 'produto' in df_planos.columns:
                                 produtos_count = df_planos['produto'].value_counts()
                                 st.write("**Distribuição por Produto:**")
                                 for produto, count in produtos_count.items():
                                     st.write(f"- **{produto}**: {count} tabelas")
                             
-                            # Contador por segmentação se disponível
                             if 'segmentacao' in df_planos.columns:
                                 seg_count = df_planos['segmentacao'].value_counts()
                                 st.write("**Distribuição por Segmentação:**")
                                 for seg, count in seg_count.items():
                                     st.write(f"- **{seg}**: {count} planos")
                     
-                    # Exibir JSON COMPLETO
-                    st.markdown("### 📄 JSON COMPLETO Resultante")
+                    st.markdown("JSON COMPLETO Resultante")
                     json_str = json.dumps(result, ensure_ascii=False, indent=2)
                     st.code(json_str, language='json')
                     
-                    # Botões de download
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
                         st.download_button(
-                            label="⬇️ Baixar JSON COMPLETO",
+                            label="Baixar JSON COMPLETO",
                             data=json_str,
                             file_name=f"plano_saude_COMPLETO_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                             mime="application/json"
                         )
                     
                     with col2:
-                        # Converter para DataFrame para análise
                         if result.get("planos_precos"):
                             df_planos = pd.DataFrame(result["planos_precos"])
                             csv = df_planos.to_csv(index=False)
                             st.download_button(
-                                label="⬇️ CSV Planos COMPLETO",
+                                label="CSV Planos COMPLETO",
                                 data=csv,
                                 file_name=f"planos_COMPLETO_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv"
                             )
                     
                     with col3:
-                        # Análise da rede credenciada
                         if result.get("informacoes_gerais"):
                             rede_data = []
                             for info in result["informacoes_gerais"]:
@@ -462,33 +440,29 @@ def main():
                                 df_rede = pd.DataFrame(rede_data)
                                 csv_rede = df_rede.to_csv(index=False)
                                 st.download_button(
-                                    label="⬇️ CSV Rede COMPLETA",
+                                    label="CSV Rede COMPLETA",
                                     data=csv_rede,
                                     file_name=f"rede_credenciada_COMPLETA_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                     mime="text/csv"
                                 )
                     
-                    # Análise estatística completa com Pandas e NumPy
                     if result.get("planos_precos"):
-                        st.markdown("### 📈 Análise Estatística COMPLETA (Pandas & NumPy)")
+                        st.markdown("Análise Estatística COMPLETA (Pandas & NumPy)")
                         
                         df_planos = pd.DataFrame(result["planos_precos"])
                         
                         if not df_planos.empty:
-                            # Mostrar tabela completa
-                            st.markdown("#### 📊 Tabela Completa de Planos")
+                            
+                            st.markdown("Tabela Completa de Planos")
                             st.dataframe(df_planos, use_container_width=True)
                             
-                            # Análise de valores se disponível
                             if 'valores_faixas' in df_planos.columns:
                                 st.markdown("#### 💰 Análise de Valores por Faixa Etária")
                                 
-                                # Extrair todos os valores numéricos
                                 valores_numericos = []
                                 for idx, row in df_planos.iterrows():
                                     if isinstance(row['valores_faixas'], dict):
                                         for faixa, valor in row['valores_faixas'].items():
-                                            # Extrair números do valor
                                             numeros = re.findall(r'[\d,]+\.?\d*', str(valor))
                                             if numeros:
                                                 try:
@@ -509,7 +483,6 @@ def main():
                                     df_valores = pd.DataFrame(valores_numericos)
                                     st.dataframe(df_valores, use_container_width=True)
                                     
-                                    # Estatísticas com NumPy
                                     valores_array = np.array(df_valores['valor'])
                                     
                                     col1, col2, col3, col4 = st.columns(4)
@@ -526,7 +499,7 @@ def main():
                                     st.write(f"**Total de Valores Extraídos:** {len(valores_array)}")
                 
                 else:
-                    st.error("❌ Erro ao processar o PDF. Tente novamente.")
+                    st.error("Erro ao processar o PDF. Tente novamente.")
 
 if __name__ == "__main__":
     main()
