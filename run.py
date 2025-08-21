@@ -457,7 +457,7 @@ def main():
                             st.dataframe(df_planos, use_container_width=True)
                             
                             if 'valores_faixas' in df_planos.columns:
-                                st.markdown("#### 💰 Análise de Valores por Faixa Etária")
+                                st.markdown("Análise de Valores por Faixa Etária")
                                 
                                 valores_numericos = []
                                 for idx, row in df_planos.iterrows():
